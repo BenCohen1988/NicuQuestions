@@ -24,13 +24,13 @@
         <!-- Header -->
         <div class="bg-gradient-to-r from-indigo-700 to-blue-500 p-6 text-white text-center shadow-inner">
             <h1 class="text-3xl font-extrabold mb-2">מאסטר בהדרכה קלינית</h1>
-            <p class="text-blue-100 font-medium text-lg">מערכת למידה אדפטיבית מבוססת חומר מאומת</p>
+            <p class="text-blue-100 font-medium text-lg">מערכת למידה אדפטיבית מבוססת ספרות מקצועית</p>
         </div>
 
         <!-- 1. Topic Selection Screen -->
         <div id="screen-selection" class="p-8 fade-in">
             <h2 class="text-2xl font-bold mb-4 text-center text-indigo-900">בחרי נושאים לתרגול:</h2>
-            <p class="text-gray-500 mb-8 text-center">בכל מבחן 50 שאלות מהנושאים שבחרת. המערכת תתחיל בשאלות בסיסיות ותעלה את רמת הקושי ככל שתצדקי. בכל מבחן חדש יוצגו קודם שאלות שעוד לא ראית. ההתקדמות נשמרת אוטומטית.</p>
+            <p class="text-gray-500 mb-8 text-center">בכל מבחן 50 שאלות מהנושאים שבחרת. המערכת תתחיל בשאלות בסיסיות ותעלה את רמת הקושי ככל שתצדקי. בכל מבחן חדש יוצגו קודם שאלות שעוד לא ראית. שאלות שטעית בהן יחזרו במבחן הבא בסדר אקראי, עד שתעני עליהן נכון. ההתקדמות נשמרת אוטומטית.</p>
             <div id="bank-info" class="text-center text-sm text-indigo-700 mb-6"></div>
 
             <div class="space-y-4 mb-8 max-w-2xl mx-auto" id="topics-container">
@@ -50,7 +50,7 @@
             <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                 <span id="q-counter" class="text-sm font-bold text-gray-600 bg-gray-100 py-1.5 px-4 rounded-full shadow-sm">שאלה 1</span>
                 <span id="q-topic-label" class="text-sm font-bold text-indigo-700 bg-indigo-50 py-1.5 px-4 rounded-full shadow-sm">נושא...</span>
-                <span class="flex flex-wrap gap-2 items-center justify-end"><span id="q-ai" class="hidden bg-violet-600 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm" title="שאלה שנוצרה ע״י Claude מתוך חומר הלימוד, ולא מהמאגר המאומת">🤖 נוצרה ע״י Claude</span><span id="q-recall" class="hidden bg-sky-600 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm" title="שאלה אמיתית משחזור מבחן קודם. התשובה וההסבר נקבעו ע״י Claude לפי חומר הקורס">📝 משחזור מבחן</span><span id="q-difficulty" class="text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm">רמה</span></span>
+                <span class="flex flex-wrap gap-2 items-center justify-end"><span id="q-ai" class="hidden bg-violet-600 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm" title="שאלה שנוצרה ע״י Claude מתוך הספרות, ולא מהמאגר המאומת">🤖 נוצרה ע״י Claude</span><span id="q-retry" class="hidden bg-orange-500 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm" title="טעית בשאלה הזו במבחן קודם">🔁 שאלה חוזרת</span><span id="q-recall" class="hidden bg-sky-600 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm" title="שאלה אמיתית משחזור מבחן קודם. התשובה וההסבר נקבעו ע״י Claude על פי הספרות">📝 משחזור מבחן</span><span id="q-difficulty" class="text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm">רמה</span></span>
             </div>
             <div class="w-full bg-gray-100 rounded-full h-2 mb-6"><div id="q-progress" class="bg-indigo-500 h-2 rounded-full transition-all" style="width:0%"></div>
             </div>
@@ -761,6 +761,8 @@
             const STATE_KEY = 'clinicalQuiz.state.v2';   // מבחן פעיל (שמירה אוטומטית)
             const SEEN_KEY = 'clinicalQuiz.seen.v1';     // באיזה מבחן כל שאלה הוצגה לאחרונה
             const EXAMNO_KEY = 'clinicalQuiz.examNo.v1';
+            const WRONG_KEY = 'clinicalQuiz.wrong.v1';   // שאלות שנענו לא נכון וטרם נענו נכון: יחזרו במבחן הבא
+            const RETRY_SHARE = 0.5;                     // לכל היותר חצי מהמבחן מורכב משאלות חוזרות
 
             function load(key, fallback) {
                 try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
@@ -786,6 +788,17 @@
                 BANK[id] = { id, topicId: q[0], difficulty: q[1], qText: q[2], correct: q[3], wrong: [q[4], q[5], q[6]], exp: String(q[7]).replace(/\s*📚 מקור:[^\n]*/g, ''), ai: q[8] === 1, recall: q[8] === 2 };
             });
             const ALL_IDS = Object.keys(BANK);
+
+            // Questions whose text was reworded get a new id: carry saved progress over to the new id
+            const ID_ALIASES = {"q1i2zab8":"q19llbbk","q1nvnur8":"qt751qo","q2pbhrr":"q1y0dpbn","qbsuq62":"qtv0fxy","qsmh1u1":"q1jlv9dx","q394wuh":"qdvao0o","qel5dx8":"q16twifs","q1u9tmg6":"q1owzeq","q8x5rle":"q1bpb0ku"};
+            function migrateIds(key) {
+                const m = load(key, {});
+                let changed = false;
+                for (const [oldId, newId] of Object.entries(ID_ALIASES)) {
+                    if (m[oldId] !== undefined) { if (m[newId] === undefined) m[newId] = m[oldId]; delete m[oldId]; changed = true; }
+                }
+                if (changed) save(key, m);
+            }
 
             let state = null; // { topics, examNo, examSize, asked:[], difficulty, cc, cw, stats, current:{id, options, answered, chosen} }
 
@@ -818,9 +831,11 @@
                     `;
                 });
 
+                migrateIds(SEEN_KEY);
+                migrateIds(WRONG_KEY);
                 const seen = load(SEEN_KEY, {});
                 const seenCount = ALL_IDS.filter(id => seen[id]).length;
-                document.getElementById('bank-info').innerText = `במאגר ${ALL_IDS.length} שאלות (מתוכן ${ALL_IDS.filter(id => BANK[id].ai).length} שנוצרו ע״י Claude, ו-${ALL_IDS.filter(id => BANK[id].recall).length} משחזורי מבחנים). ראית עד כה ${seenCount} מהן.`;
+                document.getElementById('bank-info').innerText = `במאגר ${ALL_IDS.length} שאלות (מתוכן ${ALL_IDS.filter(id => BANK[id].ai).length} שנוצרו ע״י Claude, ו-${ALL_IDS.filter(id => BANK[id].recall).length} משחזורי מבחנים). ראית עד כה ${seenCount} מהן.` + (Object.keys(load(WRONG_KEY, {})).filter(id => BANK[id]).length ? ` ${Object.keys(load(WRONG_KEY, {})).filter(id => BANK[id]).length} שאלות שטעית בהן יחזרו במבחן הבא.` : '');
 
                 // Resume an unfinished exam automatically
                 const saved = load(STATE_KEY, null);
@@ -879,7 +894,10 @@
 
                 const stats = {};
                 selectedTopics.forEach(id => stats[id] = { correct: 0, total: 0 });
-                state = { topics: selectedTopics, examNo, examSize: Math.min(EXAM_SIZE, poolSize), asked: [], difficulty: 1, cc: 0, cw: 0, stats, current: null };
+                const examSize = Math.min(EXAM_SIZE, poolSize);
+                const wrongIds = Object.keys(load(WRONG_KEY, {})).filter(id => BANK[id] && selectedTopics.includes(BANK[id].topicId));
+                const retry = shuffle(wrongIds).slice(0, Math.floor(examSize * RETRY_SHARE));
+                state = { topics: selectedTopics, examNo, examSize, asked: [], retry, difficulty: 1, cc: 0, cw: 0, stats, current: null };
 
                 show('screen-quiz');
                 loadQuestion();
@@ -888,9 +906,14 @@
             // Pick the next question: least recently seen first, then current difficulty, then the least covered topic
             function pickNext() {
                 const asked = new Set(state.asked);
+                // Questions answered wrong in earlier exams come back, scattered at random through the exam
+                const retryLeft = (state.retry || []).filter(id => !asked.has(id));
+                const slotsLeft = state.examSize - state.asked.length;
+                if (retryLeft.length && Math.random() < retryLeft.length / slotsLeft) return retryLeft[0];
+                const retrySet = new Set(retryLeft);
                 const seen = load(SEEN_KEY, {});
-                let available = ALL_IDS.filter(id => state.topics.includes(BANK[id].topicId) && !asked.has(id));
-                if (available.length === 0) return null;
+                let available = ALL_IDS.filter(id => state.topics.includes(BANK[id].topicId) && !asked.has(id) && !retrySet.has(id));
+                if (available.length === 0) return retryLeft[0] || null;
 
                 const freshest = Math.min(...available.map(id => seen[id] || 0));
                 let candidates = available.filter(id => (seen[id] || 0) === freshest);
@@ -942,6 +965,7 @@
                 else { diffSpan.innerText = 'רמה קשה 🔴'; diffSpan.className = 'bg-rose-500 text-sm font-bold text-white py-1.5 px-4 rounded-full shadow-sm'; }
                 document.getElementById('q-ai').classList.toggle('hidden', !q.ai);
                 document.getElementById('q-recall').classList.toggle('hidden', !q.recall);
+                document.getElementById('q-retry').classList.toggle('hidden', !(state.retry || []).includes(state.current.id));
 
                 document.getElementById('q-topic-label').innerText = topicName(q.topicId);
                 document.getElementById('q-text').innerText = q.qText;
@@ -965,6 +989,10 @@
                 const isCorrect = state.current.options[index].isCorrect;
                 state.current.answered = true;
                 state.current.chosen = index;
+
+                const wrong = load(WRONG_KEY, {});
+                if (isCorrect) delete wrong[q.id]; else wrong[q.id] = state.examNo;
+                save(WRONG_KEY, wrong);
 
                 if (!state.stats[q.topicId]) state.stats[q.topicId] = { correct: 0, total: 0 };
                 state.stats[q.topicId].total++;
