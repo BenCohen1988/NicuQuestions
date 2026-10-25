@@ -711,7 +711,7 @@
             rawQuestions.forEach(q => {
                 const id = hashText(q[2]);
                 if (BANK[id]) return; // skip exact duplicates
-                BANK[id] = { id, topicId: q[0], difficulty: q[1], qText: q[2], correct: q[3], wrong: [q[4], q[5], q[6]], exp: q[7], ai: !!q[8] };
+                BANK[id] = { id, topicId: q[0], difficulty: q[1], qText: q[2], correct: q[3], wrong: [q[4], q[5], q[6]], exp: String(q[7]).replace(/\s*📚 מקור:[^\n]*/g, ''), ai: !!q[8] };
             });
             const ALL_IDS = Object.keys(BANK);
 
