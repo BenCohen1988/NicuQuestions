@@ -1,7 +1,9 @@
 name: CI
 
-# The steps are OpsScripts' node-ci.yml; this file says when they run.
-# pull_request already covers claude/** branches.
+# Self-contained, not a caller of OpsScripts' node-ci.yml: OpsScripts is
+# private, and GitHub never lets a public repo use a private repo's
+# workflows or actions (the run fails before any job starts). These are the
+# steps of that workflow this repo needs: the English-only hook and the tests.
 on:
   push:
     branches: [main]
@@ -10,7 +12,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 # One run per ref; a newer push supersedes an older one off main.
 concurrency:
@@ -19,8 +20,20 @@ concurrency:
 
 jobs:
   test:
-    uses: BenCohen1988/OpsScripts/.github/workflows/node-ci.yml@v1
-    with:
-      # GitHub's runner, not the Oracle VM: this repo is public, so a fork's
-      # PR must never run on a self-hosted machine, and public repos run free.
-      runs-on: '["ubuntu-latest"]'
+    # GitHub's runner, not the Oracle VM: this repo is public, so a fork's
+    # PR must never run on a self-hosted machine, and public repos run free.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # With nothing staged the hook only runs the English-only check.
+      - name: English only
+        run: .githooks/pre-commit
+
+      - name: Test
+        run: npm test

@@ -48,4 +48,8 @@ explanation]`, plus an optional ninth field (1 = written by Claude, 2 =
 - A question's id is a hash of its text: reword one and add the old -> new
   pair to `ID_ALIASES`, or saved progress for it is lost.
 - This repo is public: never commit course materials, PDFs or exam photos.
-- CI runs on GitHub's runners, not the Oracle VM, because the repo is public.
+- CI is this repo's own `.github/workflows/ci.yml` (the English-only hook and
+  `npm test` on GitHub's runners), not a caller of OpsScripts' workflows:
+  OpsScripts is private and a public repo cannot use its workflows or
+  actions. So standard-check does not run in CI here; run it by hand from an
+  OpsScripts clone (`standard_check.py --base origin/main`).
