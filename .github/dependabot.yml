@@ -1,0 +1,20 @@
+# Weekly version bumps: stay on the newest releases and fix what an update
+# breaks. Minor and patch updates come as one grouped PR per ecosystem; a
+# major version gets a PR of its own.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ['*']
+        update-types: [minor, patch]

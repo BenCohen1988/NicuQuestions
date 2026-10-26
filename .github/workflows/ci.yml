@@ -1,0 +1,26 @@
+name: CI
+
+# The steps are OpsScripts' node-ci.yml; this file says when they run.
+# pull_request already covers claude/** branches.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# One run per ref; a newer push supersedes an older one off main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test:
+    uses: BenCohen1988/OpsScripts/.github/workflows/node-ci.yml@v1
+    with:
+      # GitHub's runner, not the Oracle VM: this repo is public, so a fork's
+      # PR must never run on a self-hosted machine, and public repos run free.
+      runs-on: '["ubuntu-latest"]'
