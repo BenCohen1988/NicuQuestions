@@ -1,0 +1,8 @@
+# Paths the formatter (.claude/scripts/format.sh) leaves alone, each with
+# its reason, e.g. `data/** -format` for JSON another program writes.
+
+* text=auto
+
+# The site is one page copied whole from the quiz build; formatting it would
+# rewrite every line of the question bank on each copy.
+index.html -format

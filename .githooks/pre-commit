@@ -1,0 +1,74 @@
+#!/bin/bash
+# pre-commit: refuse non-English text outside the app's own strings, then
+# format staged files with the repo formatter and re-stage them. Uses the
+# same dispatcher as the Claude Code hook (.claude/scripts/format.sh) so
+# commit-time and edit-time formatting are always identical.
+#
+# CI runs this same file (python-ci, swift-ci): nothing is staged there, so
+# only the language check does anything, and a commit made without the hook
+# (the GitHub web editor, a bot) is still caught.
+#
+# New clones must run once:  git config core.hooksPath .githooks
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 1
+
+# --- English only (code-change-rules) --------------------------------------
+# Everything a user of the app never sees is English: comments, docs,
+# workflows, scripts' output, records. Hebrew stays where it is the product,
+# which in source is a string literal, never a comment line. So source files
+# are checked on comment lines only, and YAML (no UI strings at all) on
+# every line. Markdown is checked on every line outside code: an inline
+# `span` (or a ``double`` one) or a fenced block is how a doc quotes the
+# app's own input or output (a command, a message format), which is the
+# product, not prose. A fence is ``` or ~~~ and closes only on a bare run
+# (no info string) of the same mark at least as long, as CommonMark reads
+# it, so a ```` fence that shows a ``` line, or a fence that shows a
+# ```bash line, does not end early and leave the prose after it unread.
+# Data files (.json, fixtures) are not checked: Hebrew there is test data
+# for a Hebrew app.
+#
+# The letters one by one, not the range [א-ת]: with no UTF-8 locale (CI,
+# containers) grep compares bytes, the range becomes bytes 90..AA, and an
+# em-dash (E2 80 94) matches. Whole characters need no locale and no -P,
+# which BSD grep on macOS lacks.
+HEB='א|ב|ג|ד|ה|ו|ז|ח|ט|י|כ|ך|ל|מ|ם|נ|ן|ס|ע|פ|ף|צ|ץ|ק|ר|ש|ת'
+files=$(git ls-files --cached --others --exclude-standard)
+bad=$(
+	{
+		echo "$files" | grep -E '\.(swift|py|sh|bash|js|jsx|ts|tsx|mjs|kt|java|go|rs|c|h|m|mm|css)$' |
+			tr '\n' '\0' | xargs -0 -r grep -snE '^[[:space:]]*(#|//|/\*|\*)' /dev/null
+		echo "$files" | grep -E '\.ya?ml$' | tr '\n' '\0' | xargs -0 -r grep -sn '' /dev/null
+		echo "$files" | grep -E '\.md$' | tr '\n' '\0' | xargs -0 -r awk '
+			FNR == 1 { fence = 0 }
+			match($0, /^[ \t]*(```+|~~~+)/) {
+				run = substr($0, RSTART, RLENGTH); gsub(/[ \t]/, "", run)
+				if (!fence) { fence = length(run); mark = substr(run, 1, 1); next }
+				bare = substr($0, RSTART + RLENGTH) ~ /^[ \t]*$/
+				if (bare && substr(run, 1, 1) == mark && length(run) >= fence) { fence = 0; next }
+			}
+			!fence {
+				line = $0; gsub(/``([^`]|`[^`])*``/, "", line); gsub(/`[^`]*`/, "", line)
+				print FILENAME ":" FNR ":" line
+			}'
+	} | grep -E "$HEB"
+)
+if [ -n "$bad" ]; then
+	echo "$bad" >&2
+	echo "pre-commit: Hebrew outside the app's strings (above). Comments, docs and workflows are English." >&2
+	exit 1
+fi
+
+# --- Format staged files ----------------------------------------------------
+formatter="$repo_root/.claude/scripts/format.sh"
+[ -x "$formatter" ] || exit 0
+
+git diff --cached --name-only -z --diff-filter=ACMR -- \
+	'*.swift' '*.py' '*.sh' '*.bash' '*.json' '*.yml' '*.yaml' \
+	'*.js' '*.jsx' '*.mjs' '*.cjs' '*.ts' '*.tsx' |
+	while IFS= read -r -d '' f; do
+		"$formatter" "$repo_root/$f"
+		git add -- "$f"
+	done
+
+exit 0

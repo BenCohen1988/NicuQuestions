@@ -1,0 +1,3 @@
+# Violations of the code standard allowed today; this list only shrinks.
+# One key per site: rule, then path(s), tab-separated. After fixing one, run
+# python3 <OpsScripts>/.github/actions/standard-check/standard_check.py --write-baseline

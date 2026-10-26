@@ -1,9 +1,17 @@
-# NICU Questions – מבחן תרגול בהדרכה קלינית
+# NICU Questions
 
-אתר מבחנים אדפטיבי בעברית לתרגול קורס ההדרכה הקלינית בסיעוד.
+An adaptive practice-exam site, in Hebrew, for the clinical instruction
+course in nursing.
 
-**לפתיחה בדפדפן או בטלפון:** https://bencohen1988.github.io/NicuQuestions/
+**Open it in a browser or on a phone:** https://bencohen1988.github.io/NicuQuestions/
 
-- מבחנים של 50 שאלות מהנושאים שבוחרים.
-- שאלות שעוד לא נראו מופיעות קודם.
-- ההתקדמות נשמרת אוטומטית בדפדפן (בכל מכשיר ודפדפן בנפרד).
+- 50-question exams from the topics you pick.
+- Questions you have not seen yet come first.
+- Wrong answers come back in the next exam until answered correctly.
+- Progress is saved automatically in the browser (separately on each device
+  and browser).
+
+## Development
+
+The whole site is `index.html`. `npm test` checks the question bank's
+shape. Run `git config core.hooksPath .githooks` once per clone.
