@@ -1,5 +1,6 @@
 # shellcheck shell=bash
-# formatters.sh: which version of each formatter, and how to get it. Sourced by
+# formatters.sh: which version of each formatter (and of SwiftLint, the one
+# pinned linter, which standard-check runs), and how to get it. Sourced by
 # format.sh (never run), which has no room for it: format.sh stays under the
 # 300-line limit by keeping dispatch and formatting, and this keeps the rest.
 #
@@ -16,15 +17,16 @@
 # one ruff binary per version. A bump installs beside the old version, never
 # over a binary a running job holds. taplo, jq and the rest are not pinned.
 
-RUFF_VERSION="${RUFF_VERSION:-0.17.2}"
+RUFF_VERSION="${RUFF_VERSION:-0.17.4}"
 SHFMT_VERSION="${SHFMT_VERSION:-3.14.1}"
 YAMLFMT_VERSION="${YAMLFMT_VERSION:-0.21.0}"
 PRETTIER_VERSION="${PRETTIER_VERSION:-3.9.10}"
-SWIFTFORMAT_VERSION="${SWIFTFORMAT_VERSION:-0.64.2}"
+SWIFTFORMAT_VERSION="${SWIFTFORMAT_VERSION:-0.64.6}"
 SWIFT_VERSION="${SWIFT_VERSION:-6.4}"
+SWIFTLINT_VERSION="${SWIFTLINT_VERSION:-0.65.1}"
 
 TOOLS="${RUNNER_TOOL_CACHE:-$HOME/.cache}"
-PINNED_TOOLS="ruff shfmt yamlfmt prettier swiftformat"
+PINNED_TOOLS="ruff shfmt yamlfmt prettier swiftformat swiftlint"
 
 # The version a tool is pinned to; empty for a tool that is not pinned.
 pin_of() {
@@ -34,6 +36,7 @@ pin_of() {
 	yamlfmt) echo "$YAMLFMT_VERSION" ;;
 	prettier) echo "$PRETTIER_VERSION" ;;
 	swiftformat) echo "$SWIFTFORMAT_VERSION" ;;
+	swiftlint) echo "$SWIFTLINT_VERSION" ;;
 	esac
 }
 
@@ -119,6 +122,18 @@ fetch_swiftformat() {
 	download "https://github.com/nicklockwood/SwiftFormat/releases/download/$1/$asset.zip" "$2/a.zip" &&
 		python3 -m zipfile -e "$2/a.zip" "$2/unzipped" &&
 		mkdir "$2/payload" && install -m 755 "$2/unzipped/$asset" "$2/payload/swiftformat"
+}
+
+# Linux takes the static build: the other one needs the Swift toolchain's libs.
+fetch_swiftlint() {
+	local asset=portable_swiftlint member=swiftlint
+	if ! os_is_mac; then
+		asset=swiftlint_linux_amd64 member=swiftlint-static
+		cpu_is_arm && asset=swiftlint_linux_arm64
+	fi
+	download "https://github.com/realm/SwiftLint/releases/download/$1/$asset.zip" "$2/a.zip" &&
+		python3 -m zipfile -e "$2/a.zip" "$2/unzipped" &&
+		mkdir "$2/payload" && install -m 755 "$2/unzipped/$member" "$2/payload/swiftlint"
 }
 
 fetch_prettier() {
