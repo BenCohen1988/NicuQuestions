@@ -22,3 +22,8 @@ test('text follows the system text size on Android and iOS', () => {
   assert.match(page, /font:\s*-apple-system-body/);
   assert.doesNotMatch(page, /font-size:\s*[\d.]+px|text-\[[\d.]+px\]/);
 });
+
+test('sizes are px-equivalent at the default text size on iOS too', () => {
+  assert.match(page, /--text-px:\s*calc\(1rem \/ 16\)/);
+  assert.match(page, /--text-px:\s*calc\(1rem \/ 17\)/);
+});
