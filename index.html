@@ -6,12 +6,32 @@
     <meta name="text-scale" content="scale">
     <title>מערכת למידה אדפטיבית - הדרכה קלינית</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind's rem scales in px of the design, times --text-px (see the style block): the same size as
+        // the design at the default system text size, larger when the reader enlarges their text.
+        (() => {
+            const px = (n) => `calc(${n} * var(--text-px))`;
+            const lineHeight = { xs: 16, sm: 20, base: 24, lg: 28, xl: 28, '2xl': 32, '3xl': 36, '4xl': 40 };
+            const fontSize = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, '2xl': 24, '3xl': 30, '4xl': 36 };
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        spacing: Object.fromEntries(
+                            [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 96].map((k) => [k, px(k * 4)]),
+                        ),
+                        fontSize: Object.fromEntries(Object.entries(fontSize).map(([k, v]) => [k, [px(v), px(lineHeight[k])]])),
+                        borderRadius: { sm: px(2), DEFAULT: px(4), md: px(6), lg: px(8), xl: px(12), '2xl': px(16), '3xl': px(24) },
+                    },
+                },
+            };
+        })();
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
         /* No pinch or double-tap zoom, so it feels like an app (iOS ignores user-scalable) */
-        :root { touch-action: pan-x pan-y; }
+        :root { touch-action: pan-x pan-y; --text-px: calc(1rem / 16); }
         /* Text follows the system text size: iOS takes its system body size on the root. */
-        @supports (font: -apple-system-body) { :root { font: -apple-system-body; } }
+        @supports (font: -apple-system-body) { :root { font: -apple-system-body; line-height: 1.5; --text-px: calc(1rem / 17); } }
         body { font-family: 'Assistant', sans-serif; background-color: #f4f7f6; }
         .fade-in { animation: fadeIn 0.4s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
