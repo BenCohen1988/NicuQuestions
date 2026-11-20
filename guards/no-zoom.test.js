@@ -8,11 +8,17 @@ import { readFileSync } from 'node:fs';
 const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 test('the viewport tag blocks zoom', () => {
-    const tag = page.match(/<meta[^>]*name="viewport"[^>]*>/)?.[0] ?? '';
-    assert.match(tag, /maximum-scale=1(\.0)?/);
-    assert.match(tag, /user-scalable=no/);
+  const tag = page.match(/<meta[^>]*name="viewport"[^>]*>/)?.[0] ?? '';
+  assert.match(tag, /maximum-scale=1(\.0)?/);
+  assert.match(tag, /user-scalable=no/);
 });
 
 test('the page sets touch-action so iOS does not zoom either', () => {
-    assert.match(page, /touch-action:\s*pan-x pan-y/);
+  assert.match(page, /touch-action:\s*pan-x pan-y/);
+});
+
+test('text follows the system text size on Android and iOS', () => {
+  assert.match(page, /<meta[^>]*name="text-scale"[^>]*content="scale"/);
+  assert.match(page, /font:\s*-apple-system-body/);
+  assert.doesNotMatch(page, /font-size:\s*[\d.]+px|text-\[[\d.]+px\]/);
 });
