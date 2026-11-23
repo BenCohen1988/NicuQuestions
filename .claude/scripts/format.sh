@@ -6,9 +6,9 @@
 #                                      Installs a missing formatter, then formats.
 #   format.sh --setup <path>...        Install the formatters the path needs; format nothing.
 #                                      Exit 1 when a pinned one could not be installed.
-#   format.sh --install <tool>...      Install exactly these pinned tools (ruff shfmt yamlfmt
-#                                      prettier swiftformat); exit 1 if one failed, 2 if a
-#                                      name is not pinned. CI's entry: no version in a workflow.
+#   format.sh --install <tool>...      Install exactly these pinned tools (PINNED_TOOLS in
+#                                      formatters.sh); exit 1 if one failed, 2 if a name
+#                                      is not pinned. CI's entry: no version in a workflow.
 #   format.sh --lint <path>...         Swift only: SwiftFormat --lint with the same arguments
 #                                      as a format run; exit 1 when any file would change.
 #   format.sh --hook                   Claude Code PostToolUse mode: reads the hook
@@ -158,7 +158,17 @@ format_file() {
 	terraform) terraform fmt "$f" >/dev/null 2>&1 ;;
 	# retain_line_breaks_single keeps the blank lines that separate blocks, so
 	# hand-written workflows keep their visual structure.
-	yamlfmt) yamlfmt -quiet -formatter retain_line_breaks_single=true "$f" 2>/dev/null ;;
+	# yamlfmt 0.21.0 leaves its blank-line placeholder inside a folded (>)
+	# scalar that a blank line follows; put the blank line back.
+	# shortcut: undoes one yamlfmt bug, drop it once a release fixes it.
+	yamlfmt)
+		yamlfmt -quiet -formatter retain_line_breaks_single=true "$f" 2>/dev/null || return 0
+		grep -q ' #magic___^_^___line$' "$f" || return 0
+		local tmp
+		tmp="$(mktemp)" &&
+			awk '{ if (sub(/ #magic___\^_\^___line$/, "")) { print; print "" } else print }' "$f" >"$tmp" &&
+			mv "$tmp" "$f"
+		;;
 	taplo) taplo fmt "$f" >/dev/null 2>&1 ;;
 	# Prettier picks up the project's .prettierrc/.prettierignore automatically
 	# and only writes on a successful parse, so a syntax error never corrupts.
