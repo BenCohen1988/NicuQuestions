@@ -11,6 +11,12 @@ The rules that apply to every repo live in one place and are not copied here:
   plugin (`ponytail@ponytail`), enabled in `.claude/settings.json` so it updates
   itself; standard-check fails settings that drop it. Follow `code-change-rules`
   on every change; run `dev-team` for anything bigger than a one-file fix.
+- **EGM** (`egm@egm`, google/elephant-goldfish-model) is enabled in
+  `.claude/settings.json` like `ponytail`, for design docs only (`dev-team`
+  section 3, "EGM"). It writes its briefs, drafts and reports only here:
+
+  EGM artifact directory: .egm
+
 - **Formatter hook**: `.claude/scripts/format.sh` and `formatters.sh` (the
   pinned formatter versions) are byte-identical copies of
   `OpsScripts/skills/auto-format/scripts/`. `.claude/settings.json`

@@ -34,9 +34,16 @@
         "source": "github",
         "repo": "DietrichGebert/ponytail"
       }
+    },
+    "egm": {
+      "source": {
+        "source": "github",
+        "repo": "google/elephant-goldfish-model"
+      }
     }
   },
   "enabledPlugins": {
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "egm@egm": true
   }
 }
